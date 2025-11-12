@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: demo
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/ai_project
+    username: root
+    password: 1234
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+  # MyBatis配置
+  mybatis:
+    mapper-locations: classpath*:mapper/*.xml
+    type-aliases-package: com.example.ai.entity
+    configuration:
+      map-underscore-to-camel-case: true
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+  ai:
+    dashscope:
+      api-key: YOUR_QWEN_API_KEY   #待添加APIKEY待添加APIKEY待添加APIKEY待添加APIKEY待添加APIKEY待添加APIKEY待添加APIKEY待添加APIKEY
+      chat:
+        options:
+          model: qwen-plus            # 也可用 qwen-turbo / qwen-long 等
+          max-tokens: 4096
+      embedding:
+        options:
+          model: text-embedding-v3
+
+
+    openai:
+      enable: false
+      api-key: YOUR_API_KEY
+      chat:
+        options:
+          model: gpt-3.5-turbo
+
+    ollama:
+      enable: false
+
+
+server:
+  port: 8080
+
+auth:
+  interceptor:
+    enabled: true
+
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+# JWT配置
+jwt:
+  secret: mySecretKey123456789012345678901234567890
+  expiration: 86400000  # 24小时，单位毫秒
+
+vectorstore:
+  path: F:/JavaProject/MyAIProject/vectorstoreData/chat-pdf.json

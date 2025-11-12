@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.ai.mapper.UserMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="UserResultMap" type="com.example.ai.entity.User">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="password_hash" property="passwordHash" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 插入用户 -->
+    <insert id="insert" parameterType="com.example.ai.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, password_hash, email, phone, created_at)
+        VALUES (#{username}, #{passwordHash}, #{email}, #{phone}, #{createdAt})
+    </insert>
+
+    <!-- 根据ID查询用户 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="UserResultMap">
+        SELECT id, username, password_hash, email, phone, created_at
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据用户名查询用户 -->
+    <select id="selectByUsername" parameterType="java.lang.String" resultMap="UserResultMap">
+        SELECT id, username, password_hash, email, phone, created_at
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <!-- 根据邮箱查询用户 -->
+    <select id="selectByEmail" parameterType="java.lang.String" resultMap="UserResultMap">
+        SELECT id, username, password_hash, email, phone, created_at
+        FROM users
+        WHERE email = #{email}
+    </select>
+
+    <!-- 检查用户名是否存在 -->
+    <select id="existsByUsername" parameterType="java.lang.String" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <!-- 检查邮箱是否存在 -->
+    <select id="existsByEmail" parameterType="java.lang.String" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM users
+        WHERE email = #{email}
+    </select>
+
+    <!-- 更新用户信息 -->
+    <update id="update" parameterType="com.example.ai.entity.User">
+        UPDATE users
+        <set>
+            <if test="username != null">username = #{username},</if>
+            <if test="passwordHash != null">password_hash = #{passwordHash},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="phone != null">phone = #{phone},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除用户 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
+
+    <!-- 查询所有用户 -->
+    <select id="selectAll" resultMap="UserResultMap">
+        SELECT id, username, password_hash, email, phone, created_at
+        FROM users
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.ai.mapper.TurnMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="TurnResultMap" type="com.example.ai.entity.Turn">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="tuid" property="tuid" jdbcType="BINARY" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="uid" property="uid" jdbcType="BIGINT"/>
+        <result column="session_id" property="sessionId" jdbcType="BINARY" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result column="tid" property="tid" jdbcType="INTEGER"/>
+        <result column="parent_tid" property="parentTid" jdbcType="INTEGER"/>
+        <result column="user_json" property="userJson" jdbcType="VARCHAR"/>
+        <result column="ai_json" property="aiJson" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="BIGINT"/>
+        <result column="last_accessed_at" property="lastAccessedAt" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <!-- 插入对话轮次 -->
+    <insert id="insert" parameterType="com.example.ai.entity.Turn" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO turns (tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at)
+        VALUES (#{tuid}, #{uid}, #{sessionId}, #{tid}, #{parentTid}, #{userJson}, #{aiJson}, #{createdAt}, #{lastAccessedAt})
+    </insert>
+
+    <!-- 根据ID查询对话轮次 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="TurnResultMap">
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM turns
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据TUID查询对话轮次 -->
+    <select id="selectByTuid" parameterType="byte[]" resultMap="TurnResultMap">
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM turns
+        WHERE tuid = #{tuid,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+    </select>
+
+    <!-- 根据会话ID和TID查询对话轮次 -->
+    <select id="selectBySessionIdAndTid" resultMap="TurnResultMap">
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM turns
+        WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler} AND tid = #{tid}
+    </select>
+
+    <!-- 根据会话ID和父TID查询对话轮次列表 -->
+    <select id="selectBySessionIdAndParentTid" resultMap="TurnResultMap">
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM turns
+        WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler} AND parent_tid = #{parentTid}
+        ORDER BY tid ASC
+    </select>
+
+    <!-- 根据会话ID分页查询对话轮次 -->
+    <select id="selectBySessionIdWithPagination" resultMap="TurnResultMap">
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM turns
+        WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+        ORDER BY tid ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 根据会话ID查询对话轮次总数 -->
+    <select id="countBySessionId" parameterType="byte[]" resultType="int">
+        SELECT COUNT(1)
+        FROM turns
+        WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+    </select>
+
+    <!-- 更新对话轮次 -->
+    <update id="update" parameterType="com.example.ai.entity.Turn">
+        UPDATE turns
+        <set>
+            <if test="tuid != null">tuid = #{tuid},</if>
+            <if test="uid != null">uid = #{uid},</if>
+            <if test="sessionId != null">session_id = #{sessionId},</if>
+            <if test="tid != null">tid = #{tid},</if>
+            <if test="parentTid != null">parent_tid = #{parentTid},</if>
+            <if test="userJson != null">user_json = #{userJson},</if>
+            <if test="aiJson != null">ai_json = #{aiJson},</if>
+            <if test="createdAt != null">created_at = #{createdAt},</if>
+            <if test="lastAccessedAt != null">last_accessed_at = #{lastAccessedAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除对话轮次 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM turns WHERE id = #{id}
+    </delete>
+
+    <!-- 根据会话ID查询所有对话轮次 -->
+    <select id="selectBySessionId" parameterType="byte[]" resultMap="TurnResultMap">
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM turns
+        WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+        ORDER BY tid ASC
+    </select>
+
+    <!-- 根据会话ID和父TID查询对话链 -->
+    <select id="selectConversationChain" resultMap="TurnResultMap">
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM turns
+        WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+          AND parent_tid = #{parentTid}
+        ORDER BY tid ASC
+    </select>
+
+    <!-- 根据会话ID删除所有对话轮次 -->
+    <delete id="deleteBySessionId" parameterType="byte[]">
+        DELETE FROM turns WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+    </delete>
+    
+    <!-- MySQL递归查询对话链（生产环境使用，需要MySQL 8.0+） -->
+    <!--
+    <select id="selectConversationChainRecursive" resultMap="TurnResultMap">
+        WITH RECURSIVE conversation_chain AS (
+            SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+            FROM turns
+            WHERE session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+              AND parent_tid = #{parentTid}
+            
+            UNION ALL
+            
+            SELECT t.id, t.tuid, t.uid, t.session_id, t.tid, t.parent_tid, t.user_json, t.ai_json, t.created_at, t.last_accessed_at
+            FROM turns t
+            INNER JOIN conversation_chain cc ON t.parent_tid = cc.tid
+            WHERE t.session_id = #{sessionId,typeHandler=org.apache.ibatis.type.ByteArrayTypeHandler}
+        )
+        SELECT id, tuid, uid, session_id, tid, parent_tid, user_json, ai_json, created_at, last_accessed_at
+        FROM conversation_chain
+        ORDER BY tid ASC
+    </select>
+    -->
+
+</mapper>
