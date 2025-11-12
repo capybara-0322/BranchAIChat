@@ -1,0 +1,124 @@
+一、Redis 键设计（Key Schema）
+
+一、命名约定
+
+uid：用户 ID（整型）
+
+sid：会话 ID（UUID）
+
+tid：对话节点 ID（会话内自增整型，仅在同一 sid 下唯一）
+
+tuid：全局 Turn UUID（跨系统追踪与跳转）
+
+Key 前缀均为小写，冒号分层；字段名使用下划线小写。
+
+二、Key Schema（按功能分组）
+1) 会话元数据（每个用户、每个会话一份）
+
+Key
+
+user:{uid}:session:{sid}:meta   (Hash)
+
+
+Fields
+
+title：会话标题（String）
+
+created_at：创建时间（epoch 秒，Integer）
+
+updated_at：最近更新时间（epoch 秒，Integer）
+
+last_active_tuid：最近访问节点的全局 UUID（String）
+
+last_active_tid：最近访问节点在本会话内的 tid（Integer）
+
+turn_seq：本会话下的 tid 自增序列号（Integer，使用 INCR 维护）
+
+说明
+
+turn_seq 仅在 user:{uid}:session:{sid}:meta 上自增，保证会话内 tid 发号简单可靠。
+
+2) 对话轮次节点（Turn）
+
+Key
+
+user:{uid}:session:{sid}:turn:{tid}   (Hash)
+
+
+Fields
+
+tuid：全局 Turn UUID（String，全局唯一）
+
+parent_tid：父节点 tid（空字符串/缺省表示根）
+
+user_json：用户消息内容（String，建议只存摘要或压缩）
+
+ai_json：AI 回复内容（String，建议只存摘要或压缩）
+
+created_at：创建时间（epoch 秒，Integer）
+
+last_accessed_at：最近访问时间（epoch 秒，Integer）
+
+3) 子节点索引（分支浏览）
+
+Key
+
+user:{uid}:session:{sid}:children:{tid}   (Set)
+
+
+Members
+
+子节点 tid 集合（Set of Integer/String）
+
+说明
+
+根节点可约定 children:root 存储其直接子节点：
+
+user:{uid}:session:{sid}:children:root (Set)
+
+4) 全局反向索引（通过 tuid 定位到用户与会话）
+
+Key
+
+turn:{tuid}   (Hash)
+
+
+Fields
+
+uid：用户 ID（String/Integer）
+
+sid：会话 ID（String）
+
+tid：对话节点 ID（Integer/String）
+
+用途
+
+从 UI、日志或外部系统仅持有 tuid 时，O(1) 反查到 uid/sid/tid 并跳转。
+
+5) 访问排序与列表（最近/历史）
+
+Key
+
+user:{uid}:sessions:updated                 (ZSet, score = updated_at)
+user:{uid}:session:{sid}:turns:accessed     (ZSet, score = last_accessed_at)
+
+
+Members
+
+sessions:updated 的 member 为 sid
+
+turns:accessed 的 member 为 tid
+
+用途
+
+快速获取用户最近会话列表 / 会话内最近访问的节点列表（分页、倒序）。
+
+三 接口对接建议（简要）
+
+创建会话 API：生成 sid，写 meta，ZSet 入列。
+
+追加轮次 API：INCR turn_seq → 写 turn → 写子索引 → 写反向索引 → 刷新 meta/排序。
+
+查询最近会话/轮次 API：基于 ZSet 倒序分页 + 批量 HMGET。
+
+通过 tuid 跳转 API：读 turn:{tuid} → 定位三元组 → 拉数据。

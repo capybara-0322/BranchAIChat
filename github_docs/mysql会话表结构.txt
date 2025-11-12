@@ -1,0 +1,49 @@
+-- 1） 用户
+CREATE TABLE users (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(100) NOT NULL,
+  email VARCHAR(100),
+  phone VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_username (username)
+)
+
+
+-- 2) 会话
+CREATE TABLE sessions (
+  id BINARY(16) NOT NULL,                 -- sid（UUID_to_bin）
+  uid BIGINT NOT NULL,                    -- 外键到 users.id
+  title VARCHAR(200) NOT NULL DEFAULT '',
+  created_at BIGINT NOT NULL,             -- epoch 秒（或 DATETIME）
+  updated_at BIGINT NOT NULL,
+  last_active_tuid BINARY(16) NULL,       -- 引用 turns.tuid（可空）
+  last_active_tid INT NOT NULL DEFAULT 0, -- 会话内最近节点的 tid
+  turn_seq INT NOT NULL DEFAULT 0,        -- 会话内 tid 发号器
+  PRIMARY KEY (id),
+  KEY idx_sessions_uid_updated (uid, updated_at DESC),
+  KEY idx_sessions_last_active (uid, last_active_tid),
+  CONSTRAINT fk_sessions_user FOREIGN KEY (uid) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+-- 3) 轮次节点（Turn）
+CREATE TABLE turns (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,   -- 内部自增 PK（推荐做外键引用）
+  tuid BINARY(16) NOT NULL UNIQUE,        -- 全局 Turn UUID（唯一）
+  uid BIGINT NOT NULL,                    -- 冗余 uid，便于查询（也可不冗余）
+  session_id BINARY(16) NOT NULL,         -- 外键到 sessions.id
+  tid INT NOT NULL,                       -- 会话内序号（你的 tid）
+  parent_tid INT NULL,                    -- 父节点 tid；根为 NULL
+  user_json JSON NULL,                    -- 可先用 JSON/长文本；或只存摘要
+  ai_json   JSON NULL,
+  created_at BIGINT NOT NULL,
+  last_accessed_at BIGINT NOT NULL,
+
+  -- 关键约束/索引
+  UNIQUE KEY uk_turn_tid (session_id, tid),        -- 会话内 tid 唯一
+  KEY idx_turns_session_parent (session_id, parent_tid), -- 子节点查询
+  KEY idx_turns_session_access (session_id, last_accessed_at DESC),
+  KEY idx_turns_uid_session (uid, session_id, tid),
+  CONSTRAINT fk_turns_session FOREIGN KEY (session_id) REFERENCES sessions(id),
+  CONSTRAINT fk_turns_user FOREIGN KEY (uid) REFERENCES users(id)
+) ENGINE=InnoDB;

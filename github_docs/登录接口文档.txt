@@ -1,0 +1,132 @@
+# 👤 注册 + 登录 简易接口（JWT）
+
+## 1) 用户注册
+
+**基本信息**
+
+* **Path**：`/api/register`
+* **Method**：`POST`
+* **描述**：创建新用户；可选是否注册后直接签发登录 Token（`autoLogin`）。
+
+**请求参数**
+**Headers**
+
+| 参数名称         | 参数值              | 是否必须 |
+| ------------ | ---------------- | ---- |
+| Content-Type | application/json | 是    |
+
+**Body**
+
+| 名称              | 类型      | 是否必须 | 示例                                        | 备注                 |
+| --------------- | ------- | ---- | ----------------------------------------- | ------------------ |
+| username        | string  | 必须   | zhe_c                                    | 3~20位，字母数字下划线     |
+| password        | string  | 必须   | P@ssw0rd                                 | 后端用 BCrypt 存储      |
+| confirmPassword | string  | 可选   | P@ssw0rd                                 | 如前端已校验可不传          |
+| email           | string  | 否    | [zhe@example.com](mailto:zhe@example.com) | 用于找回/通知            |
+| phone           | string  | 否    | 13800000000                               | 选填                 |
+| autoLogin       | boolean | 否    | true                                      | 是否注册后直接登录（默认 true） |
+
+**返回数据**（`autoLogin=true` 时）
+
+```json
+{
+  "code": 0,
+  "msg": "注册成功",
+  "data": {
+    "userId": 123,
+    "username": "zhe_c",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+  }
+}
+```
+
+**返回数据**（`autoLogin=false` 时）
+
+```json
+{
+  "code": 0,
+  "msg": "注册成功",
+  "data": {
+    "userId": 123,
+    "username": "zhe_c"
+  }
+}
+```
+
+---
+
+## 2) 登录
+
+**基本信息**
+
+* **Path**：`/api/login`
+* **Method**：`POST`
+* **描述**：校验用户名与密码，返回带 `userId` 的 JWT。
+
+**请求参数**
+**Headers**：`Content-Type: application/json`
+
+**Body**
+
+| 名称       | 类型     | 是否必须 |
+| -------- | ------ | ---- |
+| username | string | 必须   |
+| password | string | 必须   |
+
+**返回数据**
+
+```json
+{
+  "code": 0,
+  "msg": "登录成功",
+  "data": {
+    "userId": 123,
+    "username": "zhe_c",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+  }
+}
+```
+
+---
+
+## 3) 获取当前用户信息
+
+**基本信息**
+
+* **Path**：`/api/user/me`
+* **Method**：`GET`
+
+**请求参数**
+**Headers**：`Authorization: Bearer <token>`
+
+**返回数据**
+
+```json
+{
+  "code": 0,
+  "msg": "获取成功",
+  "data": {
+    "userId": 123,
+    "username": "zhe_c",
+    "roles": ["USER"]
+  }
+}
+```
+
+---
+
+## 通用错误码（新增注册相关）
+
+| code     | 含义           | 说明          |
+| -------- | ------------ | ----------- |
+| 0        | 成功           | 正常          |
+| 1001     | 参数错误         | 缺失/格式不合法    |
+| 1002     | 登录失败         | 用户名或密码错误    |
+| 1003     | 未授权          | Token 缺失或无效 |
+| 1004     | Token 过期     | 需重新登录       |
+| **1005** | **用户名已存在**   | 注册时冲突       |
+| **1006** | **密码强度不足**   | 不满足策略       |
+| **1007** | **用户名格式不合法** | 超长/含非法字符    |
+
+---
+

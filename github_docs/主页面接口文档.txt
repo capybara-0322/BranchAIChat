@@ -1,0 +1,711 @@
+
+
+# 会话相关接口
+
+## 创建会话
+
+**基本信息**
+Path： `/api/sessions/create`
+Method： **POST**
+接口描述：新建一个空会话（生成 `sid`），用于后续承载分支对话。
+
+**请求参数**
+
+**Headers**
+
+| 参数名称         | 参数值              | 是否必须 | 示例 | 备注 |
+| ------------ | ---------------- | ---- | -- | -- |
+| Content-Type | application/json | 是    |    |    |
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Body**
+
+| 名称    | 类型     | 是否必须 | 默认值 | 备注   | 其他信息 |
+| ----- | ------ | ---- | --- | ---- | ---- |
+| title | string | 否    |     | 会话标题 |      |
+
+**返回数据**
+
+| 名称                    | 类型              | 是否必须 | 默认值 | 备注               | 其他信息                       |
+| --------------------- | --------------- | ---- | --- | ---------------- | -------------------------- |
+| code                  | integer         | 必须   |     | 状态码              | format: int32              |
+| msg                   | string | null  | 非必须  |     | 提示信息             |                            |
+| data                  | object          | 必须   |     | 会话对象             |                            |
+| ├─ sid                | string          | 必须   |     | 会话ID             | format: uuid               |
+| ├─ title              | string          | 必须   |     | 标题               |                            |
+| ├─ created_at        | string          | 必须   |     | 创建时间             | format: date-time(ISO8601) |
+| ├─ updated_at        | string          | 必须   |     | 最近更新时间           | format: date-time          |
+| ├─ last_active_tid  | integer | null | 非必须  |     | 最近活跃的本会话tid      | format: int64              |
+| ├─ last_active_tuid | string | null  | 非必须  |     | 最近活跃的全局turn uuid | format: uuid               |
+| ├─ turn_count        | integer         | 必须   | 0   | 节点数量             | format: int32              |
+
+---
+
+## 会话分页查询
+
+**基本信息**
+Path： `/api/v1/sessions/page`
+Method： **GET**
+接口描述：按最近更新时间倒序分页列出历史会话。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+
+**Query**
+
+| 参数名称     | 是否必须 | 示例     | 备注          |
+| -------- | ---- | ------ | ----------- |
+| title    | 否    | “产品讨论” | 标题模糊匹配      |
+| page     | 是    | 1      | 页码（从1开始）    |
+| pageSize | 是    | 20     | 每页记录数（≤100） |
+
+**返回数据**
+
+| 名称                       | 类型             | 是否必须 | 默认值 | 备注                |
+| ------------------------ | -------------- | ---- | --- | ----------------- |
+| code                     | number         | 必须   |     |                   |
+| msg                      | null | string | 非必须  |     |                   |
+| data                     | object         | 必须   |     |                   |
+| ├─ total                 | number         | 必须   |     | 总数                |
+| ├─ records               | object []     | 必须   |     | 会话记录列表            |
+| │  ├─ sid                | string         | 必须   |     | format: uuid      |
+| │  ├─ title              | string         | 必须   |     |                   |
+| │  ├─ created_at        | string         | 必须   |     | format: date-time |
+| │  ├─ updated_at        | string         | 必须   |     | format: date-time |
+| │  ├─ last_active_tid  | number | null | 非必须  |     | format: int64     |
+| │  ├─ last_active_tuid | string | null | 非必须  |     | format: uuid      |
+| │  ├─ turn_count        | number         | 必须   |     |                   |
+
+---
+
+## 获取会话详情
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}`
+Method： **GET**
+接口描述：读取单个会话元数据。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注         |
+| ---- | ---- | ------- | ---------- |
+| sid  | 是    | `8b3c…` | 会话ID(UUID) |
+
+**返回数据**（同“创建会话”的 `data` 结构）
+
+---
+
+## 更新会话
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}`
+Method： **PATCH**
+接口描述：修改会话标题或手动设置最近活跃节点。
+
+**请求参数**
+
+**Headers**
+
+| 参数名称         | 参数值              | 是否必须 | 示例 | 备注 |
+| ------------ | ---------------- | ---- | -- | -- |
+| Content-Type | application/json | 是    |    |    |
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注   |
+| ---- | ---- | ------- | ---- |
+| sid  | 是    | `8b3c…` | 会话ID |
+
+**Body**
+
+| 名称                 | 类型      | 是否必须 | 默认值 | 备注            | 其他信息          |
+| ------------------ | ------- | ---- | --- | ------------- | ------------- |
+| title              | string  | 否    |     | 新标题           |               |
+| last_active_tid  | integer | 否    |     | 最近活跃tid（二选一）  | format: int64 |
+| last_active_tuid | string  | 否    |     | 最近活跃tuid（二选一） | format: uuid  |
+
+**返回数据**（同“创建会话”的 `data` 结构）
+
+---
+
+## 删除会话
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}`
+Method： **DELETE**
+接口描述：删除会话及其全部节点。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注   |
+| ---- | ---- | ------- | ---- |
+| sid  | 是    | `8b3c…` | 会话ID |
+
+**返回数据**
+
+| 名称   | 类型             | 是否必须 | 备注            |
+| ---- | -------------- | ---- | ------------- |
+| code | integer        | 必须   | format: int32 |
+| msg  | string | null | 非必须  |               |
+| data | null           | 必须   | 固定为 null      |
+
+---
+
+# 节点/分支（Turn）相关接口
+
+## 创建节点（从父节点分叉或作为根）
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/turns`
+Method： **POST**
+接口描述：在会话中创建一个新节点（用户消息 + 可选AI摘要），若传 `parent_tid` 则挂到对应父节点下。
+
+**请求参数**
+
+**Headers**
+
+| 参数名称         | 参数值              | 是否必须 |
+| ------------ | ---------------- | ---- |
+| Content-Type | application/json | 是    |
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注   |
+| ---- | ---- | ------- | ---- |
+| sid  | 是    | `8b3c…` | 会话ID |
+
+**Body**
+
+| 名称          | 类型      | 是否必须 | 默认值 | 备注               | 其他信息          |
+| ----------- | ------- | ---- | --- | ---------------- | ------------- |
+| parent_tid | integer | 否    |     | 父节点tid；不传=作为根子节点 | format: int64 |
+| user_json  | object  | 必须   |     | 用户消息摘要/内容        | 建议压缩          |
+| ai_json    | object  | 否    |     | AI回复摘要/内容        | 建议压缩          |
+
+**返回数据**
+
+| 名称                    | 类型              | 是否必须 | 备注                |                  |
+| --------------------- | --------------- | ---- | ----------------- | ---------------- |
+| code                  | integer         | 必须   |                   |                  |
+| msg                   | string | null  | 非必须  |                   |                  |
+| data                  | object          | 必须   | 新建的节点             |                  |
+| ├─ sid                | string          | 必须   | format: uuid      |                  |
+| ├─ tid                | integer         | 必须   | 会话内自增             | format: int64    |
+| ├─ tuid               | string          | 必须   | 全局UUID            | format: uuid     |
+| ├─ parent_tid        | integer | null | 必须   | 根节点时为 null        | format: int64    |
+| ├─ user_json         | object          | 必须   |                   |                  |
+| ├─ ai_json           | object | null  | 非必须  |                   |                  |
+| ├─ created_at        | string          | 必须   | format: date-time |                  |
+| ├─ last_accessed_at | string          | 必须   | format: date-time |                  |
+| ├─ children_tids     | array(integer)  | 必须   | 初始空数组             | format: int64[] |
+
+---
+
+## 获取节点详情
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/turns/{tid}`
+Method： **GET**
+接口描述：返回指定节点信息；可控是否返回 children 与 payload。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注    |
+| ---- | ---- | ------- | ----- |
+| sid  | 是    | `8b3c…` | 会话ID  |
+| tid  | 是    | 12      | 节点tid |
+
+**Query**
+
+| 参数名称              | 是否必须 | 示例   | 备注                       |
+| ----------------- | ---- | ---- | ------------------------ |
+| include_children | 否    | true | 是否返回 `children_tids`     |
+| include_payload  | 否    | true | 是否返回 `user_json/ai_json` |
+
+**返回数据**（同“创建节点”的 `data` 结构，按参数裁剪）
+
+---
+
+## 节点分页查询（按时间）
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/turns/page`
+Method： **GET**
+接口描述：平铺列出会话内节点（按 `last_accessed_at` 或 `created_at` 排序）。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注   |
+| ---- | ---- | ------- | ---- |
+| sid  | 是    | `8b3c…` | 会话ID |
+
+**Query**
+
+| 参数名称             | 是否必须 | 示例                 | 备注                                   |
+| ---------------- | ---- | ------------------ | ------------------------------------ |
+| order_by        | 否    | last_accessed_at | 可选：`last_accessed_at` / `created_at` |
+| desc             | 否    | true               | 是否倒序                                 |
+| page             | 是    | 1                  | 页码                                   |
+| pageSize         | 是    | 50                 | 每页记录数                                |
+| include_payload | 否    | false              | 是否包含 `user_json/ai_json`             |
+
+**返回数据**
+
+| 名称                       | 类型             | 是否必须 | 备注                |
+| ------------------------ | -------------- | ---- | ----------------- |
+| code                     | integer        | 必须   |                   |
+| msg                      | string | null | 非必须  |                   |
+| data                     | object         | 必须   |                   |
+| ├─ total                 | number         | 必须   |                   |
+| ├─ records               | object[]      | 必须   |                   |
+| │  ├─ tid                | number         | 必须   | format: int64     |
+| │  ├─ tuid               | string         | 必须   | format: uuid      |
+| │  ├─ parent_tid        | number | null | 必须   |                   |
+| │  ├─ created_at        | string         | 必须   | format: date-time |
+| │  ├─ last_accessed_at | string         | 必须   | format: date-time |
+| │  ├─ user_json         | object | null | 依参数  |                   |
+| │  ├─ ai_json           | object | null | 依参数  |                   |
+
+---
+
+获取节点的所有子节点
+
+基本信息
+Path： /api/v1/sessions/{sid}/turns/{tid}/children
+Method： GET
+接口描述：获取指定节点的所有子节点列表。
+
+请求参数
+
+Headers
+
+参数名称	参数值	是否必须	示例	备注
+Authorization	Bearer <jwt>	是		用户身份认证
+
+Path
+
+参数名称	是否必须	示例	备注
+sid	是	8b3c…	会话ID(UUID)
+tid	是	12	节点tid
+
+Query
+
+参数名称	是否必须	示例	备注
+include_payload	否	true	是否返回 user_json/ai_json
+
+返回数据
+
+名称	类型	是否必须	备注
+code	integer	必须	状态码
+msg	string	null	非必须
+data	object	必须	返回子节点列表
+├─ tid	integer	必须	子节点tid
+├─ tuid	string	必须	子节点全局UUID
+├─ parent_tid	integer	必须	父节点tid
+├─ user_json	object	null	依参数
+├─ ai_json	object	null	依参数
+├─ created_at	string	必须	创建时间
+├─ last_accessed_at	string	必须	最后访问时间
+├─ children_tids	array(integer)	必须	子节点的tid数组
+
+## 删除节点
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/turns/{tid}`
+Method： **DELETE**
+接口描述：删除节点；支持删除子树或仅删除当前节点。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注    |
+| ---- | ---- | ------- | ----- |
+| sid  | 是    | `8b3c…` | 会话ID  |
+| tid  | 是    | 10      | 节点tid |
+
+**Query**
+
+| 参数名称 | 是否必须 | 示例      | 备注                                      |
+| ---- | ---- | ------- | --------------------------------------- |
+| mode | 否    | subtree | `subtree`（默认，连同子节点一起删） / `node`（仅删当前节点） |
+
+**返回数据**
+
+| 名称   | 类型             | 是否必须 | 备注       |
+| ---- | -------------- | ---- | -------- |
+| code | integer        | 必须   |          |
+| msg  | string | null | 非必须  |          |
+| data | null           | 必须   | 固定为 null |
+
+---
+
+## 设置最近活跃节点
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/active`
+Method： **POST**
+接口描述：前端点击某节点后调用，用于记忆“上次看到哪”。
+
+**请求参数**
+
+**Headers**
+
+| 参数名称         | 参数值              | 是否必须 |
+| ------------ | ---------------- | ---- |
+| Content-Type | application/json | 是    |
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注   |
+| ---- | ---- | ------- | ---- |
+| sid  | 是    | `8b3c…` | 会话ID |
+
+**Body**
+
+| 名称   | 类型      | 是否必须 | 默认值 | 备注           |               |
+| ---- | ------- | ---- | --- | ------------ | ------------- |
+| tid  | integer | 否    |     | 与 `tuid` 二选一 | format: int64 |
+| tuid | string  | 否    |     | 与 `tid` 二选一  | format: uuid  |
+
+**返回数据**
+
+| 名称   | 类型             | 是否必须 | 备注       |
+| ---- | -------------- | ---- | -------- |
+| code | integer        | 必须   |          |
+| msg  | string | null | 非必须  |          |
+| data | null           | 必须   | 固定为 null |
+
+---
+
+# 树与路径相关接口
+
+## 获取会话树/子树
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/tree`
+Method： **GET**
+接口描述：用于渲染树形历史，支持限定层级与是否返回payload。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注   |
+| ---- | ---- | ------- | ---- |
+| sid  | 是    | `8b3c…` | 会话ID |
+
+**Query**
+
+| 参数名称             | 是否必须 | 示例    | 备注                       |
+| ---------------- | ---- | ----- | ------------------------ |
+| root_tid        | 否    | 1     | 子树根tid；不传表示根（null）       |
+| depth            | 否    | 3     | -1 表示不限制层数               |
+| include_payload | 否    | false | 是否返回 `user_json/ai_json` |
+
+**返回数据**
+
+| 名称                   | 类型             | 是否必须 | 备注               |
+| -------------------- | -------------- | ---- | ---------------- |
+| code                 | integer        | 必须   |                  |
+| msg                  | string | null | 非必须  |                  |
+| data                 | object         | 必须   |                  |
+| ├─ sid               | string         | 必须   | format: uuid     |
+| ├─ root_tid         | number | null | 必须   |                  |
+| ├─ nodes             | object[]      | 必须   | 节点简表             |
+| │  ├─ tid            | number         | 必须   | format: int64    |
+| │  ├─ tuid           | string         | 必须   | format: uuid     |
+| │  ├─ parent_tid    | number | null | 必须   |                  |
+| │  ├─ children_tids | number[]      | 必须   | format: int64[] |
+| │  ├─ user_json     | object | null | 依参数  |                  |
+| │  ├─ ai_json       | object | null | 依参数  |                  |
+
+---
+
+## 获取从根到指定节点的路径链
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/paths/{tid}`
+Method： **GET**
+接口描述：返回“根 → … → tid”的线性链，用于回放某条分支。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注      |
+| ---- | ---- | ------- | ------- |
+| sid  | 是    | `8b3c…` | 会话ID    |
+| tid  | 是    | 12      | 目标节点tid |
+
+**Query**
+
+| 参数名称             | 是否必须 | 示例    | 备注           |
+| ---------------- | ---- | ----- | ------------ |
+| include_payload | 否    | false | 是否包含 payload |
+
+**返回数据**
+
+| 名称                 | 类型             | 是否必须 | 备注           |                  |
+| ------------------ | -------------- | ---- | ------------ | ---------------- |
+| code               | integer        | 必须   |              |                  |
+| msg                | string | null | 非必须  |              |                  |
+| data               | object         | 必须   |              |                  |
+| ├─ sid             | string         | 必须   | format: uuid |                  |
+| ├─ path_tid_list | number[]      | 必须   | 依次为根到目标      | format: int64[] |
+| ├─ nodes           | object[]      | 必须   | 路径上节点        |                  |
+| │  ├─ tid          | number         | 必须   |              |                  |
+| │  ├─ tuid         | string         | 必须   |              |                  |
+| │  ├─ parent_tid  | number | null | 必须   |              |                  |
+| │  ├─ user_json   | object | null | 依参数  |              |                  |
+| │  ├─ ai_json     | object | null | 依参数  |              |                  |
+
+---
+
+## 获取最近活跃节点的路径链
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/latest-chain`
+Method： **GET**
+接口描述：快捷返回“最近活跃节点”的路径链。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      |
+| ---- | ---- | ------- |
+| sid  | 是    | `8b3c…` |
+
+**Query**
+
+| 参数名称             | 是否必须 | 示例    | 备注           |
+| ---------------- | ---- | ----- | ------------ |
+| include_payload | 否    | false | 是否包含 payload |
+
+**返回数据**
+
+| 名称                 | 类型             | 是否必须 | 备注           |                  |
+| ------------------ | -------------- | ---- | ------------ | ---------------- |
+| code               | integer        | 必须   |              |                  |
+| msg                | string | null | 非必须  |              |                  |
+| data               | object         | 必须   |              |                  |
+| ├─ sid             | string         | 必须   | format: uuid |                  |
+| ├─ path_tid_list | number[]      | 必须   | 依次为根到目标      | format: int64[] |
+| ├─ nodes           | object[]      | 必须   | 路径上节点        |                  |
+| │  ├─ tid          | number         | 必须   |              |                  |
+| │  ├─ tuid         | string         | 必须   |              |                  |
+| │  ├─ parent_tid  | number | null | 必须   |              |                  |
+| │  ├─ user_json   | object | null | 依参数  |              |                  |
+| │  ├─ ai_json     | object | null | 依参数  |              |                  |
+
+---
+
+# 检索与工具接口
+
+## 节点关键词检索
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/search`
+Method： **GET**
+接口描述：对 `user_json/ai_json` 摘要做关键词检索（实现可基于倒排或外部搜索）。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      |
+| ---- | ---- | ------- |
+| sid  | 是    | `8b3c…` |
+
+**Query**
+
+| 参数名称     | 是否必须 | 示例        | 备注    |
+| -------- | ---- | --------- | ----- |
+| q        | 是    | embedding | 关键词   |
+| page     | 否    | 1         | 页码    |
+| pageSize | 否    | 20        | 每页记录数 |
+
+**返回数据**
+
+| 名称                | 类型             | 是否必须 | 备注            |
+| ----------------- | -------------- | ---- | ------------- |
+| code              | integer        | 必须   |               |
+| msg               | string | null | 非必须  |               |
+| data              | object         | 必须   |               |
+| ├─ total          | number         | 必须   |               |
+| ├─ matches        | object[]      | 必须   |               |
+| │  ├─ tid         | number         | 必须   | format: int64 |
+| │  ├─ score       | number         | 必须   | 相似度/相关度       |
+| │  ├─ snippet     | string         | 否    | 命中摘要          |
+| │  ├─ parent_tid | number | null | 必须   |               |
+
+---
+
+## 通过 tuid 反查 sid/tid
+
+**基本信息**
+Path： `/api/v1/turns/resolve/{tuid}`
+Method： **GET**
+接口描述：由全局 Turn UUID 快速定位所在会话与本地tid。
+
+**请求参数**
+
+**Headers**
+| Authorization | Bearer <jwt>|	是 |    | 用户身份认证
+
+**Path**
+
+| 参数名称 | 是否必须 | 示例      | 备注     |
+| ---- | ---- | ------- | ------ |
+| tuid | 是    | `b1a6…` | 全局UUID |
+
+**返回数据**
+
+| 名称     | 类型             | 是否必须 | 备注            |
+| ------ | -------------- | ---- | ------------- |
+| code   | integer        | 必须   |               |
+| msg    | string | null | 非必须  |               |
+| data   | object         | 必须   |               |
+| ├─ sid | string         | 必须   | format: uuid  |
+| ├─ tid | number         | 必须   | format: int64 |
+
+---
+
+# 一体式对话接口（创建节点并生成AI回复）
+
+## 发消息并生成AI回复
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/chat`
+Method： **POST**
+接口描述：从 `parent_tid`（可选）继续或分叉，发送用户消息，服务端生成 AI 回复，并以一个新节点写入树中。
+
+请求参数
+
+Headers
+
+参数名称	参数值	是否必须	示例	备注
+Content-Type	application/json	是		
+Accept	text/event-stream	是		指定 SSE 输出
+Authorization	Bearer <jwt>	是		用户身份认证
+
+Path
+
+参数名称	是否必须	示例	备注
+sid	是	8b3c…	会话ID
+
+Body
+
+名称	类型	是否必须	默认值	备注	其他信息
+parent_tid	integer	否		继续/分叉的父节点	format: int64
+user_json	object	必须		用户消息内容	
+gen_config	object	否		生成参数（温度、最大tokens等）	
+├─ temperature	number	否	0.7		
+├─ max_tokens	integer	否	1024		
+stream_options	object	否		流控制选项	
+├─ include_usage	boolean	否	false	是否在尾事件附带 token 用量汇总	
+├─ heartbeat_sec	integer	否	10	心跳事件间隔（秒）	
+client_event_id	string	否		客户端自定义ID，便于去重/追踪	
+
+返回数据
+
+⚠️ 注意：本接口返回为 SSE事件流，而非一次性 JSON。下面列出主要事件类型及 data 格式。
+
+事件类型	data示例	说明
+chunk	{"sid":"…","gen_id":"…","index":0,"delta":"今","finish_reason":null}	模型增量输出
+tool_call	{"gen_id":"…","call_id":"…","name":"search","arguments":{"q":"…"}}	工具调用事件
+usage	{"gen_id":"…","prompt_tokens":123,"completion_tokens":456,"total_tokens":579}	token 用量统计
+ping	{}	心跳事件
+error	{"code":500,"msg":"provider timeout","gen_id":"…"}	错误事件，流立即终止
+done	{"code":1,"msg":null,"data":{"sid":"…","tid":18,"tuid":"…","parent_tid":12,"user_json":{…},"ai_json":{"text":"完整汇总","segments":[…]},"created_at":"…","last_accessed_at":"…","children_tids":[]}}	最终收尾事件，提供完整 turn 对象
+---
+
+## 发消息并生成AI回复（有RAG功能）
+
+**基本信息**
+Path： `/api/v1/sessions/{sid}/RAGchat`
+Method： **POST**
+接口描述：从 `parent_tid`（可选）继续或分叉，发送用户消息，服务端生成 AI 回复，并以一个新节点写入树中。
+
+请求参数
+
+Headers
+
+参数名称	参数值	是否必须	示例	备注
+Content-Type	application/json	是		
+Accept	text/event-stream	是		指定 SSE 输出
+Authorization	Bearer <jwt>	是		用户身份认证
+
+Path
+
+参数名称	是否必须	示例	备注
+sid	是	8b3c…	会话ID
+
+Body
+
+名称	类型	是否必须	默认值	备注	其他信息
+parent_tid	integer	否		继续/分叉的父节点	format: int64
+user_json	object	必须		用户消息内容	
+gen_config	object	否		生成参数（温度、最大tokens等）	
+├─ temperature	number	否	0.7		
+├─ max_tokens	integer	否	1024		
+stream_options	object	否		流控制选项	
+├─ include_usage	boolean	否	false	是否在尾事件附带 token 用量汇总	
+├─ heartbeat_sec	integer	否	10	心跳事件间隔（秒）	
+client_event_id	string	否		客户端自定义ID，便于去重/追踪	
+
+返回数据
+
+⚠️ 注意：本接口返回为 SSE事件流，而非一次性 JSON。下面列出主要事件类型及 data 格式。
+
+事件类型	data示例	说明
+chunk	{"sid":"…","gen_id":"…","index":0,"delta":"今","finish_reason":null}	模型增量输出
+tool_call	{"gen_id":"…","call_id":"…","name":"search","arguments":{"q":"…"}}	工具调用事件
+usage	{"gen_id":"…","prompt_tokens":123,"completion_tokens":456,"total_tokens":579}	token 用量统计
+ping	{}	心跳事件
+error	{"code":500,"msg":"provider timeout","gen_id":"…"}	错误事件，流立即终止
+done	{"code":1,"msg":null,"data":{"sid":"…","tid":18,"tuid":"…","parent_tid":12,"user_json":{…},"ai_json":{"text":"完整汇总","segments":[…]},"created_at":"…","last_accessed_at":"…","children_tids":[]}}	最终收尾事件，提供完整 turn 对象
+---
+
