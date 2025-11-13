@@ -1,0 +1,16 @@
+llm_model: "gpt-4o-mini"
+translator_choose_model: "gpt-4o-mini"
+translator_model: "gpt-4o-mini"
+router_model: "gpt-4o-mini"
+query_construct_model: "gpt-4o-mini"
+embedding_model: "text-embedding-3-small"
+generate_model: "gpt-4o"
+generate_temperature: "0.2"
+chroma_db_path: "./database/chroma database/vector_data_1"
+mysql_host: "localhost:3306"
+mysql_user: "root"
+mysql_pass: "1234"
+mysql_db: "rag"
+index_path: "./data/index"
+enable_translation: true
+retrieval_top_k: 3
